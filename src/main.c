@@ -1,15 +1,3 @@
-//Порядок тестов:
-//1. Джойстик - код написан
-//2. Кнопки - код написан
-//3. RGB индикатор - код написан
-//4. WIFI - код написан
-//5. Вибромотор - код написан
-//6. Bluetooth - 
-//7. NTC - код написан
-//8. Акселерометр - код написан.
-//10. Дисплей - написать SPI
-//11. Lora - написать SPI
-
 #include <string.h>
 #include <stdio.h>
 #include "sdkconfig.h"
@@ -31,9 +19,6 @@
 #define BUTTONS_NUM 9
 #define ADC_CHANNEL_NUM 4
 #define RGB_GPIO GPIO_NUM_38
-
-// #define WIFI_SSID "MikroTik-CCDD61"
-// #define WIFI_PASS "5IM9FIIICD"
 
 #define WIFI_SSID "SETKA"
 #define WIFI_PASS "CPLDGBCJ337555"
@@ -107,8 +92,6 @@ bool is_btn_continous_log = false;
 bool is_joystick_continous_log = false;
 bool is_wifi_continous_log = true;
 bool is_ntc_continous_log = true;
-
-
 
 void adc_continous_task(void *arg) 
 {   
@@ -376,34 +359,18 @@ void app_main(void)
         ESP_LOGI("DELAY", "DELAY");
     }
 
-    //configure_pins();
+    configure_pins();
+    i2c_init();
+    adc_oneshot_unit_handle_t adc_handle = NULL;
+    adc_oneshot_init(&adc_handle, channels, ADC_CHANNEL_NUM);
 
+    wifi_sta_init(&wifi_state);
 
-
-    //bt_scan_init();
-
-    // i2c_init();
-
-    // while (1)
-    // {
-    //     i2c_print_device_table();
-    //     vTaskDelay(pdMS_TO_TICKS(2000));
-    //     printf("\n");
-    // }
-    
-
-    //configure_pins();
-
-    // adc_oneshot_unit_handle_t adc_handle = NULL;
-    // adc_oneshot_init(&adc_handle, channels, ADC_CHANNEL_NUM);
-
-    // wifi_sta_init(&wifi_state);
-
-    // led_init(RGB_GPIO, 255, &led_state);
-    // i2c_init();
-    // xTaskCreate(&udp_task_manager, "udp_task_manager", 4096, NULL, 1, NULL);
-    // xTaskCreate(&joystick_check_task, "joystick_check_task", 4096, adc_handle, 1, &joystick_check_task_handle);
-    // xTaskCreate(&button_check_task, "button_check_task", 4096, NULL, 1, &button_check_task_handle);
-    // xTaskCreate(&wifi_check_status_task, "wifi_check_status_task", 4096, &wifi_state, 1, &wifi_check_status_task_handler);
-    // xTaskCreate(&led_task, "led_check_task", 4096, &led_state, 1, NULL);
+    led_init(RGB_GPIO, 255, &led_state);
+    i2c_init();
+    xTaskCreate(&udp_task_manager, "udp_task_manager", 4096, NULL, 1, NULL);
+    xTaskCreate(&joystick_check_task, "joystick_check_task", 4096, adc_handle, 1, &joystick_check_task_handle);
+    xTaskCreate(&button_check_task, "button_check_task", 4096, NULL, 1, &button_check_task_handle);
+    xTaskCreate(&wifi_check_status_task, "wifi_check_status_task", 4096, &wifi_state, 1, &wifi_check_status_task_handler);
+    xTaskCreate(&led_task, "led_check_task", 4096, &led_state, 1, NULL);
 }
