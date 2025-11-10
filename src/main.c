@@ -14,6 +14,7 @@
 #include "bluetooth/bt_scan/bt_scan.h"
 #include "i2c/mpu6050/mpu6050.h"
 #include "spi/spi.h"
+#include "uart/uart.h"
 
 
 #define BUTTONS_NUM 9
@@ -244,6 +245,24 @@ void NTC_check_task(void *arg)
     }
 }
 
+void uart_read_task(void *arg)
+{
+    char data[1024] = {0};
+    
+    uart_send(SENSOR_STOP, sizeof(SENSOR_START) - 1);
+    uart_send(SET_RANGE, sizeof(SET_RANGE) - 1);
+    uart_send(SAVE_CFG, sizeof(SAVE_CFG) - 1);
+    uart_send(GET_SOFTWARE_VERSION, sizeof(GET_SOFTWARE_VERSION) - 1);
+    uart_send(DISTANCE_MEASUREMENT_CMD, sizeof(DISTANCE_MEASUREMENT_CMD) - 1);
+    uart_send(SENSOR_START, sizeof(SENSOR_START) - 1);
+
+    while (1)
+    {
+        uart_read(data, 1024);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+}
+
 void udp_task_manager(void *arg)
 {   
     udp_server_init(IP_STRING, PORT_STRING, &network_is_available, 1024, &udp_server);
@@ -353,6 +372,7 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+    
     for (int i = 0; i < 2; i++)
     {
         vTaskDelay(pdMS_TO_TICKS(2000));
@@ -363,14 +383,14 @@ void app_main(void)
     i2c_init();
     adc_oneshot_unit_handle_t adc_handle = NULL;
     adc_oneshot_init(&adc_handle, channels, ADC_CHANNEL_NUM);
-
     wifi_sta_init(&wifi_state);
-
     led_init(RGB_GPIO, 255, &led_state);
-    i2c_init();
+    uart_init();
+
     xTaskCreate(&udp_task_manager, "udp_task_manager", 4096, NULL, 1, NULL);
     xTaskCreate(&joystick_check_task, "joystick_check_task", 4096, adc_handle, 1, &joystick_check_task_handle);
     xTaskCreate(&button_check_task, "button_check_task", 4096, NULL, 1, &button_check_task_handle);
     xTaskCreate(&wifi_check_status_task, "wifi_check_status_task", 4096, &wifi_state, 1, &wifi_check_status_task_handler);
     xTaskCreate(&led_task, "led_check_task", 4096, &led_state, 1, NULL);
+    xTaskCreate(&uart_read_task, "uart_read_task", 4096, NULL, 1, NULL);
 }
